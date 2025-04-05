@@ -3,23 +3,27 @@ import { Achievements } from './achievements.js';
 export class AchievementManager {
     constructor(persistenceManager) {
         this.persistenceManager = persistenceManager;
-        this.unlockedAchievementIds = this.persistenceManager ? this.persistenceManager.loadAchievements() : new Set();
-        this.definitions = Achievements; // Reference to the definitions
-
-        // Stats tracked *during the current game session*
-        // These reset when a new game starts
+        this.currentUser = null; // Will be set by main.js
+        this.unlockedAchievementIds = new Set(); // Start empty until user is loaded
+        this.definitions = Achievements;
         this.sessionStats = {
             asteroidsDestroyed: 0,
             ufosDestroyed: 0,
-            // Add more stats as needed (e.g., successfulHyperspaceJumps)
         };
-
-        // Track recently unlocked achievements to show notifications
         this.recentlyUnlocked = [];
         this.notificationTimer = 0;
-        this.NOTIFICATION_DURATION = 3; // Seconds to show notification
+        this.NOTIFICATION_DURATION = 3;
+        console.log("AchievementManager initialized (waiting for user data).");
+    }
 
-        console.log("AchievementManager initialized. Unlocked:", this.unlockedAchievementIds);
+    // Call this when the user is identified or changes
+    loadUserAchievements(username) {
+        this.currentUser = username;
+        this.unlockedAchievementIds = this.persistenceManager && this.currentUser
+            ? this.persistenceManager.loadAchievements(this.currentUser)
+            : new Set();
+        this.resetSessionStats();
+        console.log(`Achievements loaded for user: ${this.currentUser || 'None'}. Unlocked:`, this.unlockedAchievementIds);
     }
 
     resetSessionStats() {
@@ -31,61 +35,69 @@ export class AchievementManager {
         this.notificationTimer = 0;
     }
 
+    // Note: resetAllAchievements is now handled by resetUserData in main.js
+    // It will call loadUserAchievements after resetting in PersistenceManager
+
     // --- Stat Update Methods --- Call these from main game logic ---
     trackAsteroidDestroyed() {
+        if (!this.currentUser) return; // Don't track if no user
         this.sessionStats.asteroidsDestroyed++;
-        this.checkUnlockConditions(); // Check after stat update
+        this.checkUnlockConditions();
     }
 
     trackUfoDestroyed() {
+        if (!this.currentUser) return;
         this.sessionStats.ufosDestroyed++;
         this.checkUnlockConditions();
     }
 
     // Call this periodically or when stats change significantly
-    checkUnlockConditions(gameState) {
+    checkUnlockConditions(gameState = {}) {
+         if (!this.currentUser) return; // Need a user context
         let newUnlockOccurred = false;
+        // Ensure gameState includes user
+        const stateWithUser = { ...gameState, user: this.currentUser };
+
         for (const key in this.definitions) {
             const achievement = this.definitions[key];
             if (!this.unlockedAchievementIds.has(achievement.id)) {
-                // Check if conditions are met
-                if (this.isConditionMet(achievement.condition, gameState)) {
+                if (this.isConditionMet(achievement.condition, stateWithUser)) {
                     this.unlockAchievement(achievement);
                     newUnlockOccurred = true;
                 }
             }
         }
-        // If a new achievement was unlocked, save the updated set
         if (newUnlockOccurred && this.persistenceManager) {
-            this.persistenceManager.saveAchievements(this.unlockedAchievementIds);
+            this.persistenceManager.saveAchievements(this.currentUser, this.unlockedAchievementIds);
         }
     }
 
     isConditionMet(condition, gameState) {
-        if (!condition) return false;
-
+        if (!condition || !gameState) return false;
+        // Pass through gameState which includes user, score, level etc.
         switch (condition.type) {
             case 'score':
-                return gameState && gameState.score >= condition.value;
+                return gameState.score !== undefined && gameState.score >= condition.value;
             case 'level':
-                return gameState && gameState.level >= condition.value;
+                return gameState.level !== undefined && gameState.level >= condition.value;
             case 'stat':
                 return this.sessionStats[condition.stat] !== undefined &&
                        this.sessionStats[condition.stat] >= condition.value;
-            // Add other condition types like 'event' later
             default:
                 return false;
         }
     }
 
     unlockAchievement(achievement) {
-        if (!this.unlockedAchievementIds.has(achievement.id)) {
-            console.log(`%cAchievement Unlocked: ${achievement.name}!`, 'color: yellow; font-weight: bold;');
-            this.unlockedAchievementIds.add(achievement.id);
-            this.recentlyUnlocked.push(achievement);
-            this.notificationTimer = this.NOTIFICATION_DURATION;
-            // Optionally play a sound
-            // audioManager.play('achievementUnlocked');
+        if (!this.currentUser || this.unlockedAchievementIds.has(achievement.id)) return;
+
+        console.log(`%cAchievement Unlocked [${this.currentUser}]: ${achievement.name}!`, 'color: yellow; font-weight: bold;');
+        this.unlockedAchievementIds.add(achievement.id);
+        this.recentlyUnlocked.push(achievement);
+        this.notificationTimer = this.NOTIFICATION_DURATION;
+        // Save immediately on unlock
+        if (this.persistenceManager) {
+            this.persistenceManager.saveAchievements(this.currentUser, this.unlockedAchievementIds);
         }
     }
 

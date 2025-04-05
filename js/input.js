@@ -30,7 +30,22 @@ export class InputHandler {
             // Menu-specific actions (can overlap with game actions)
             menuUp: ['ArrowUp', 'w', 'W'],
             menuDown: ['ArrowDown', 's', 'S'],
-            menuSelect: ['Enter', ' ', 'Space']
+            menuSelect: ['Enter', ' ', 'Space'],
+            // Add keys for prompt input
+            backspace: ['Backspace'],
+            key_a: ['a', 'A'], key_b: ['b', 'B'], key_c: ['c', 'C'],
+            key_d: ['d', 'D'], key_e: ['e', 'E'], key_f: ['f', 'F'],
+            key_g: ['g', 'G'], key_h: ['h', 'H'], key_i: ['i', 'I'],
+            key_j: ['j', 'J'], key_k: ['k', 'K'], key_l: ['l', 'L'],
+            key_m: ['m', 'M'], key_n: ['n', 'N'], key_o: ['o', 'O'],
+            key_p: ['p', 'P'], key_q: ['q', 'Q'], key_r: ['r', 'R'],
+            key_s: ['s', 'S'], key_t: ['t', 'T'], key_u: ['u', 'U'],
+            key_v: ['v', 'V'], key_w: ['w', 'W'], key_x: ['x', 'X'],
+            key_y: ['y', 'Y'], key_z: ['z', 'Z'],
+            key_0: ['0', ')'], key_1: ['1', '!'], key_2: ['2', '@'],
+            key_3: ['3', '#'], key_4: ['4', '$'], key_5: ['5', '%'],
+            key_6: ['6', '^'], key_7: ['7', '&'], key_8: ['8', '*'],
+            key_9: ['9', '('],
         };
 
         // Reverse map for quick lookup (Key -> Action Name)
@@ -46,7 +61,15 @@ export class InputHandler {
         // Define which actions are treated as single-press / consumable
         this.singlePressActionNames = new Set([
             'hyperspace', 'pause', 'enter', 'escape', 'toggleMute',
-            'menuUp', 'menuDown', 'menuSelect'
+            'menuUp', 'menuDown', 'menuSelect',
+            // Add prompt input keys
+            'backspace',
+            'key_a', 'key_b', 'key_c', 'key_d', 'key_e', 'key_f', 'key_g',
+            'key_h', 'key_i', 'key_j', 'key_k', 'key_l', 'key_m', 'key_n',
+            'key_o', 'key_p', 'key_q', 'key_r', 'key_s', 'key_t', 'key_u',
+            'key_v', 'key_w', 'key_x', 'key_y', 'key_z',
+            'key_0', 'key_1', 'key_2', 'key_3', 'key_4', 'key_5',
+            'key_6', 'key_7', 'key_8', 'key_9'
         ]);
 
         // Map touch button IDs to actions
@@ -185,6 +208,25 @@ export class InputHandler {
             return true;
         }
         return false;
+    }
+
+    // Add helper to get last pressed character key for prompt
+    consumeLastCharKey() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        for (const char of chars) {
+            const action = `key_${char}`;
+            if (this.consumeAction(action)) {
+                return char;
+            }
+        }
+         // Check lowercase keys too if mapping was case-sensitive (shouldn't be with current map)
+         for (const char of chars.toLowerCase()) {
+             const action = `key_${char}`;
+             if (this.consumeAction(action)) {
+                 return char.toUpperCase(); // Return uppercase always
+             }
+         }
+        return null;
     }
 
     destroy() {

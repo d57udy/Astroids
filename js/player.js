@@ -57,29 +57,22 @@ export class PlayerShip extends Entity {
     }
 
     fire(bullets, audioManager) {
-        // Log entry and conditions
         console.log(`PlayerShip.fire called. canShoot=${this.canShoot}, shootTimer=${this.shootTimer.toFixed(2)}`);
 
         if (this.canShoot && this.shootTimer <= 0) {
-            console.log("PlayerShip.fire: Conditions met, firing!"); // Log success
-            // Use PLAYER_SPEED constant from Bullet class
+            console.log("PlayerShip.fire: Conditions met, firing!");
             const bulletVelX = Math.cos(this.rotation) * Bullet.PLAYER_SPEED;
             const bulletVelY = Math.sin(this.rotation) * Bullet.PLAYER_SPEED;
-
-            // Spawn bullet slightly ahead of the ship's nose
             const noseX = this.x + Math.cos(this.rotation) * (this.radius);
             const noseY = this.y + Math.sin(this.rotation) * (this.radius);
-
             bullets.push(new Bullet(noseX, noseY, bulletVelX, bulletVelY, true));
             this.shootTimer = this.shootCooldown;
-
-            // Play shoot sound
             if (audioManager) {
                 audioManager.play('playerShoot');
             }
         } else {
-            // Optional log if conditions fail
-            // console.log("PlayerShip.fire: Conditions NOT met.");
+            // Log if conditions fail
+            console.log(`PlayerShip.fire: Conditions NOT met. canShoot=${this.canShoot}, shootTimer=${this.shootTimer.toFixed(2)}`);
         }
     }
 

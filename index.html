@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Asteroids</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <!-- UI Elements like Score, Lives, Level will be drawn on canvas or overlaid -->
+        <div class="ui-overlay">
+            <div id="score">Score: 0</div>
+            <div id="lives">Lives: 3</div>
+            <div id="level">Level: 1</div>
+        </div>
+
+        <!-- Touch Controls -->
+        <div class="touch-controls">
+            <div class="touch-left">
+                <button id="touch-left-btn" class="touch-btn rotate-left"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg></button>
+                <button id="touch-right-btn" class="touch-btn rotate-right"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></button>
+            </div>
+            <div class="touch-right">
+                <button id="touch-thrust-btn" class="touch-btn thrust"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6 1.41 1.41z"/></svg></button>
+                <button id="touch-fire-btn" class="touch-btn fire"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg></button>
+                <button id="touch-hyper-btn" class="touch-btn hyper"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2"><path d="M5 12 l2 -3 l3 -1 l2 1 l3 4 l-2 3 l-3 1 l-2 -1 Z M15 8 l2 -3 l3 -1 l2 1 l-1 3 l-2 3 l-3 1 l-2 -1 Z"/></svg></button>
+            </div>
+        </div>
+        <!-- Start Menu, Game Over Screen, etc. could be handled here or via JS/Canvas -->
+    </div>
+
+    <script src="js/main.js" type="module"></script>
+</body>
+</html> 

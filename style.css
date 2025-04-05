@@ -1,0 +1,111 @@
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #111; /* Dark background */
+    overflow: hidden; /* Prevent scrollbars */
+    font-family: 'Arial', sans-serif;
+    color: white;
+    /* Prevent text selection on touch controls */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    /* Improve touch responsiveness */
+    touch-action: manipulation;
+}
+
+.game-container {
+    position: relative; /* Needed for absolute positioning of UI overlay */
+    border: 1px solid #444; /* Optional border for the game area */
+    /* Ensure touch controls are contained */
+    overflow: hidden;
+}
+
+canvas {
+    display: block; /* Remove extra space below canvas */
+    background-color: #000; /* Black game area */
+}
+
+.ui-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.5em;
+    pointer-events: none; /* Allow clicks to pass through to canvas if needed */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#score,
+#lives,
+#level {
+    padding: 5px 10px;
+}
+
+/* --- Touch Controls --- */
+.touch-controls {
+    position: absolute;
+    bottom: 20px; /* Adjust as needed */
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none; /* Container doesn't block canvas */
+    z-index: 10; /* Above canvas */
+}
+
+.touch-left,
+.touch-right {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically if needed, or use row */
+    gap: 15px;
+}
+
+.touch-left {
+    align-items: flex-start;
+    flex-direction: row; /* Place rotate side-by-side */
+}
+
+.touch-right {
+    align-items: flex-end;
+    flex-direction: row; /* Place action buttons side-by-side */
+}
+
+.touch-btn {
+    width: 60px; /* Adjust size */
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent */
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%; /* Circular buttons */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto; /* Buttons are interactive */
+    cursor: pointer; /* Indicate clickable */
+    padding: 0;
+}
+
+.touch-btn svg {
+    width: 50%;
+    height: 50%;
+}
+
+.touch-btn:active {
+    background-color: rgba(255, 255, 255, 0.4); /* Feedback on press */
+}
+
+/* Hide touch controls on larger screens (e.g., tablets/desktops) */
+@media (min-width: 768px) {
+    .touch-controls {
+        display: none;
+    }
+}
+
+/* Add more styles later for menus, buttons, etc. */ 

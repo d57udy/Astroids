@@ -7,19 +7,19 @@ export class AudioManager {
         this.masterGain.connect(this.audioContext.destination);
 
         // List of sound files to load (paths relative to index.html)
-        // NOTE: Actual sound files need to be created/obtained and placed in assets/audio/
+        // NOTE: Using .mp3 extension now.
         this.soundFiles = {
-            playerShoot: 'assets/audio/player_shoot.wav',
-            playerThrust: 'assets/audio/player_thrust.wav', // Loop this one
-            playerExplode: 'assets/audio/player_explode.wav',
-            asteroidExplodeS: 'assets/audio/asteroid_explode_small.wav',
-            asteroidExplodeM: 'assets/audio/asteroid_explode_medium.wav',
-            asteroidExplodeL: 'assets/audio/asteroid_explode_large.wav',
-            ufoHum: 'assets/audio/ufo_hum.wav', // Loop this one
-            ufoShoot: 'assets/audio/ufo_shoot.wav',
-            ufoExplode: 'assets/audio/ufo_explode.wav',
-            // hyperspace: 'assets/audio/hyperspace.wav', // Add later
-            // extraLife: 'assets/audio/extra_life.wav', // Add later
+            playerShoot: 'assets/audio/player_shoot.mp3',
+            playerThrust: 'assets/audio/player_thrust.mp3', // Loop this one
+            playerExplode: 'assets/audio/player_explode.mp3',
+            asteroidExplodeS: 'assets/audio/asteroid_explode_small.mp3',
+            asteroidExplodeM: 'assets/audio/asteroid_explode_medium.mp3',
+            asteroidExplodeL: 'assets/audio/asteroid_explode_large.mp3',
+            ufoHum: 'assets/audio/ufo_hum.mp3', // Loop this one
+            ufoShoot: 'assets/audio/ufo_shoot.mp3',
+            ufoExplode: 'assets/audio/ufo_explode.mp3',
+            // hyperspace: 'assets/audio/hyperspace.mp3', // Add later
+            // extraLife: 'assets/audio/extra_life.mp3', // Add later
         };
 
         this.thrustSoundSource = null; // To control the looping thrust sound
@@ -100,11 +100,18 @@ export class AudioManager {
     // Specific function to play asteroid explosion based on size
     playAsteroidExplosion(sizeInfo) {
         let soundName = 'asteroidExplodeS'; // Default to small
-        if (sizeInfo && sizeInfo.radius > 30) { // Approx Large size radius
-            soundName = 'asteroidExplodeL';
-        } else if (sizeInfo && sizeInfo.radius > 15) { // Approx Medium size radius
-            soundName = 'asteroidExplodeM';
+        // Check sizeInfo exists and has radius
+        if (sizeInfo && sizeInfo.radius != null) {
+             if (sizeInfo.radius > 30) { // Approx Large size radius (Correct: L = 40)
+                 soundName = 'asteroidExplodeL';
+             } else if (sizeInfo.radius > 15) { // Approx Medium size radius (Correct: M = 20)
+                 soundName = 'asteroidExplodeM';
+             }
+        } else {
+            console.warn("playAsteroidExplosion called without valid sizeInfo. Playing default small sound.");
         }
+        // Add log here to confirm which sound name is selected
+        console.log(`[AudioManager] Attempting to play asteroid explosion: ${soundName} (radius: ${sizeInfo?.radius})`);
         this.play(soundName);
     }
 

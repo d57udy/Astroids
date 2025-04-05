@@ -4,7 +4,7 @@ import { Bullet } from './bullet.js'; // Will create this file next
 
 // Constants for the ship
 const SHIP_THRUST = 5; // Acceleration per frame when thrusting
-const SHIP_FRICTION = 0.99; // Slowdown factor (closer to 1 = less friction)
+const SHIP_FRICTION = 0.995; // Slowdown factor (closer to 1 = less friction)
 const SHIP_TURN_SPEED = 360; // Degrees per second
 const SHIP_INVULNERABILITY_DURATION = 3; // Seconds
 const SHIP_BLINK_INTERVAL = 0.2; // Seconds per blink

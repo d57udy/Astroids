@@ -218,10 +218,16 @@ function updateUI() {
     const scoreElement = document.getElementById('score');
     const livesElement = document.getElementById('lives');
     const levelElement = document.getElementById('level');
+    const userElement = document.getElementById('user-display'); // Get user display element
 
     if (scoreElement) scoreElement.textContent = `Score: ${score}`;
     if (livesElement) livesElement.textContent = `Lives: ${lives}`;
     if (levelElement) levelElement.textContent = `Level: ${level}`;
+    // Update user display, show placeholder if no user
+    if (userElement) {
+        userElement.textContent = `User: ${currentUser || '---'}`;
+        userElement.style.display = (currentGameState === GameState.PROMPT_USER) ? 'none' : 'block'; // Hide in prompt state
+    }
 }
 
 function handleInput(deltaTime) {
@@ -483,14 +489,6 @@ function updateGame(deltaTime) {
 function renderGame() {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Current User if logged in (top right corner)
-    if (currentUser && currentGameState !== GameState.PROMPT_USER) {
-        ctx.fillStyle = 'lightblue';
-        ctx.font = '14px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(`User: ${currentUser}`, canvas.width - 15, 25);
-    }
 
     // console.log(`[renderGame] Current state: ${currentGameState}`); // Optional: Log state every frame
     switch (currentGameState) {

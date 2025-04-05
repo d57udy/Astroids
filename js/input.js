@@ -110,6 +110,9 @@ export class InputHandler {
                     }
                 } else {
                     // Handle continuous actions
+                    if (action === 'fire') { // Log specifically for fire
+                         console.log(`[InputHandler] Setting continuous key: ${action} = ${isPressed}`);
+                    }
                     this.keys[action] = isPressed;
                 }
             });
@@ -129,6 +132,9 @@ export class InputHandler {
                 this.activeTouches[touchId] = action;
             }
             // Set continuous state
+            if (action === 'fire') { // Log specifically for fire
+                 console.log(`[InputHandler] Setting touch key: ${action} = true`);
+            }
             this.keys[action] = true;
             // Trigger single press immediately
             if (this.singlePressActionNames.has(action)) {
@@ -150,6 +156,9 @@ export class InputHandler {
             }
             if (!stillPressed) {
                 // Unset continuous state
+                 if (action === 'fire') { // Log specifically for fire
+                     console.log(`[InputHandler] Setting touch key: ${action} = false`);
+                 }
                 this.keys[action] = false;
                 // Reset single press state on touch end (it gets consumed anyway)
                 if (this.singlePressActionNames.has(action)) {
@@ -166,7 +175,12 @@ export class InputHandler {
 
     // Check and consume single-press state
     consumeAction(action) {
-        if (this.singlePressActions[action]) {
+        const wasPressed = this.singlePressActions[action]; // Check state *before* consuming
+        // Add log specific to escape action check
+        if (action === 'escape') {
+            console.log(`[InputHandler] consumeAction called for '${action}'. State was: ${wasPressed}`);
+        }
+        if (wasPressed) {
             this.singlePressActions[action] = false; // Consume
             return true;
         }

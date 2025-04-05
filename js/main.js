@@ -78,12 +78,16 @@ let level = 1;
 let currentGameState = GameState.MENU;
 let selectedDifficulty = Difficulty.MEDIUM; // Default difficulty
 let menuSelectionIndex = 0; // For menu navigation (0: Start, 1: High Scores, 2: Achievements, 3: Easy, 4: Medium, 5: Hard)
-const menuOptions = ['Start', 'High Scores', 'Achievements', Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD];
+const menuOptionBaseTexts = ['Start', 'High Scores', 'Achievements', Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD];
+let currentMenuOptions = [...menuOptionBaseTexts]; // Dynamic options based on state
 let respawnTimer = 0;
 let ufoSpawnTimer = UFO_SPAWN_BASE_INTERVAL;
 let finalScore = 0;
 let highScores = []; // Initialize high scores array
 let nextExtraLifeScore = EXTRA_LIFE_SCORE; // Track the next threshold
+let pauseMenuSelectionIndex = 0; // For pause menu navigation
+const pauseMenuOptions = ['Resume', 'Restart', 'Main Menu']; // Pause menu items
+let pausedGameExists = false; // Flag to track paused game
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -132,7 +136,7 @@ function startGame() {
     score = 0;
     lives = selectedDifficulty.startingLives;
     level = 1;
-    nextExtraLifeScore = EXTRA_LIFE_SCORE; // Reset threshold on new game
+    nextExtraLifeScore = EXTRA_LIFE_SCORE;
     bullets = [];
     asteroids = [];
     ufos = [];
@@ -144,6 +148,8 @@ function startGame() {
     updateUI();
     currentGameState = GameState.PLAYING;
     achievementManager.resetSessionStats();
+    pauseMenuSelectionIndex = 0;
+    pausedGameExists = false; // A new game is starting, no paused game exists
 }
 
 function resizeCanvas() {
@@ -167,45 +173,72 @@ function updateUI() {
 
 function handleInput(deltaTime) {
     audioManager.resumeContext();
-    // console.log(`InputHandler State: Keys=${JSON.stringify(inputHandler.keys)}, SinglePress=${JSON.stringify(inputHandler.singlePressActions)}`); // Optional detailed log
+    console.log(`[main] handleInput - Current State: ${currentGameState}`); // Log current state
 
     switch (currentGameState) {
         case GameState.MENU:
-            // Diagnostic logs for menu state
-            console.log(`MENU Input Check: menuUp=${inputHandler.singlePressActions['menuUp']}, menuDown=${inputHandler.singlePressActions['menuDown']}, menuSelect=${inputHandler.singlePressActions['menuSelect']}`);
+            // Update dynamic menu text first
+            currentMenuOptions = [...menuOptionBaseTexts];
+            if (pausedGameExists) {
+                currentMenuOptions[0] = 'Resume'; // Change "Start" to "Resume"
+            }
 
             if (inputHandler.consumeAction('menuUp')) {
-                console.log("Consumed menuUp"); // Log consumption
-                menuSelectionIndex = (menuSelectionIndex - 1 + menuOptions.length) % menuOptions.length;
+                menuSelectionIndex = (menuSelectionIndex - 1 + currentMenuOptions.length) % currentMenuOptions.length;
             }
             if (inputHandler.consumeAction('menuDown')) {
-                console.log("Consumed menuDown"); // Log consumption
-                menuSelectionIndex = (menuSelectionIndex + 1) % menuOptions.length;
+                menuSelectionIndex = (menuSelectionIndex + 1) % currentMenuOptions.length;
             }
             if (inputHandler.consumeAction('menuSelect')) {
-                console.log("Consumed menuSelect"); // Log consumption
-                const selection = menuOptions[menuSelectionIndex];
-                if (selection === 'Start') startGame();
-                else if (selection === 'High Scores') currentGameState = GameState.HIGH_SCORES;
-                else if (selection === 'Achievements') currentGameState = GameState.ACHIEVEMENTS;
-                else if (typeof selection === 'object') selectedDifficulty = selection;
+                const selectionText = currentMenuOptions[menuSelectionIndex]; // Get text or object
+                const baseSelection = typeof selectionText === 'string' ? menuOptionBaseTexts[menuSelectionIndex] : selectionText;
+
+                console.log(`Menu selection index: ${menuSelectionIndex}, Text: ${selectionText}, Base: ${baseSelection}`);
+
+                if (selectionText === 'Start' || selectionText === 'Resume') {
+                    if (pausedGameExists) {
+                        console.log("Resuming paused game...");
+                        currentGameState = GameState.PAUSED; // Go back to the pause screen/state
+                    } else {
+                        startGame(); // Start a new game
+                    }
+                } else if (baseSelection === 'High Scores') {
+                    currentGameState = GameState.HIGH_SCORES;
+                } else if (baseSelection === 'Achievements') {
+                    currentGameState = GameState.ACHIEVEMENTS;
+                } else if (typeof baseSelection === 'object') { // Difficulty
+                    selectedDifficulty = baseSelection;
+                    console.log(`Difficulty set to: ${selectedDifficulty.name}`);
+                }
             }
             break;
 
         case GameState.PLAYING:
             if (!ship || !ship.isAlive) return;
+            // Log pause state before consumption
+            // console.log(`PLAYING Input Check: pause=${inputHandler.singlePressActions['pause']}`);
             if (inputHandler.isPressed('rotateLeft')) ship.rotate(-1, deltaTime);
             if (inputHandler.isPressed('rotateRight')) ship.rotate(1, deltaTime);
             if (inputHandler.isPressed('thrust')) ship.thrust(deltaTime);
             else ship.isThrusting = false;
-            if (inputHandler.isPressed('fire')) ship.fire(bullets, audioManager);
+
+            // Log fire button state and then attempt fire
+            const firePressed = inputHandler.isPressed('fire');
+            // console.log(`PLAYING Input Check: firePressed=${firePressed}`);
+            if (firePressed) {
+                ship.fire(bullets, audioManager);
+            }
+
             if (inputHandler.consumeAction('hyperspace')) {
                 if (ship.hyperspace(canvas.width, canvas.height, asteroids, ufos, audioManager)) {
                     if (!ship.isAlive) handlePlayerDeath(true);
                 }
             }
-            if (inputHandler.consumeAction('pause')) {
+            // Check for Pause OR Escape to pause the game
+            if (inputHandler.consumeAction('pause') || inputHandler.consumeAction('escape')) {
+                console.log("Consumed pause/escape (to PAUSED)");
                 currentGameState = GameState.PAUSED;
+                pauseMenuSelectionIndex = 0; // Reset pause menu selection when pausing
                 audioManager.stopThrustSound();
                 audioManager.stopUfoHum();
                 console.log("Game Paused");
@@ -215,30 +248,88 @@ function handleInput(deltaTime) {
             break;
 
         case GameState.PAUSED:
-            if (inputHandler.consumeAction('pause')) {
+            // Resume directly with pause/escape keys
+             if (inputHandler.consumeAction('pause') || inputHandler.consumeAction('escape')) {
+                console.log("Consumed pause/escape (to PLAYING)");
                 currentGameState = GameState.PLAYING;
                 console.log("Game Resumed");
+                break; // Exit switch after resuming
+            }
+
+            // Navigate pause menu
+            if (inputHandler.consumeAction('menuUp')) {
+                pauseMenuSelectionIndex = (pauseMenuSelectionIndex - 1 + pauseMenuOptions.length) % pauseMenuOptions.length;
+            }
+            if (inputHandler.consumeAction('menuDown')) {
+                pauseMenuSelectionIndex = (pauseMenuSelectionIndex + 1) % pauseMenuOptions.length;
+            }
+
+            // Select pause menu option
+            if (inputHandler.consumeAction('menuSelect')) {
+                const selection = pauseMenuOptions[pauseMenuSelectionIndex];
+                console.log(`Pause menu selection: ${selection}`);
+                switch (selection) {
+                    case 'Resume':
+                        currentGameState = GameState.PLAYING;
+                        console.log("Game Resumed");
+                        break;
+                    case 'Restart':
+                        startGame();
+                        break;
+                    case 'Main Menu':
+                        currentGameState = GameState.MENU;
+                        menuSelectionIndex = 0;
+                        pausedGameExists = true; // Set the flag when returning to menu from pause
+                        break;
+                    // Add 'Change Difficulty' later if needed - would go to MENU
+                }
             }
             break;
 
         case GameState.HIGH_SCORES:
-            if (inputHandler.consumeAction('menuSelect') || inputHandler.consumeAction('escape')) {
-                currentGameState = GameState.MENU;
-                menuSelectionIndex = 0;
+            // console.log(`HIGH_SCORES Input Check: escape=${inputHandler.singlePressActions['escape']}`);
+            { // Use block scope
+                let returnToMenu = false;
+                if (inputHandler.consumeAction('escape')) {
+                    console.log("Consumed escape (to MENU from High Scores)");
+                    returnToMenu = true;
+                } else if (inputHandler.consumeAction('menuSelect')) {
+                    console.log("Consumed menuSelect (to MENU from High Scores)");
+                    returnToMenu = true;
+                }
+                if (returnToMenu) {
+                    currentGameState = GameState.MENU;
+                    menuSelectionIndex = 0;
+                }
             }
             break;
 
         case GameState.ACHIEVEMENTS:
-            if (inputHandler.consumeAction('menuSelect') || inputHandler.consumeAction('escape')) {
-                currentGameState = GameState.MENU;
-                menuSelectionIndex = 0;
+             // console.log(`ACHIEVEMENTS Input Check: escape=${inputHandler.singlePressActions['escape']}`);
+             { // Use block scope
+                let returnToMenu = false;
+                if (inputHandler.consumeAction('escape')) {
+                    console.log("Consumed escape (to MENU from Achievements)");
+                    returnToMenu = true;
+                } else if (inputHandler.consumeAction('menuSelect')) {
+                    console.log("Consumed menuSelect (to MENU from Achievements)");
+                    returnToMenu = true;
+                }
+                if (returnToMenu) {
+                    currentGameState = GameState.MENU;
+                    menuSelectionIndex = 0;
+                }
             }
             break;
 
         case GameState.GAME_OVER:
+            // console.log(`GAME_OVER Input Check: menuSelect=${inputHandler.singlePressActions['menuSelect']}`);
             if (inputHandler.consumeAction('menuSelect')) {
-                currentGameState = GameState.MENU;
-                menuSelectionIndex = 0;
+                console.log("Consumed menuSelect (to MENU from Game Over)");
+                 currentGameState = GameState.MENU;
+                 menuSelectionIndex = 0;
+                 // Game is over, so no paused game exists
+                 pausedGameExists = false;
             }
             break;
     }
@@ -267,7 +358,9 @@ function updateGame(deltaTime) {
     // Handle respawn timer
     if (respawnTimer > 0) {
         respawnTimer -= deltaTime;
+        // console.log(`Respawn timer: ${respawnTimer.toFixed(2)}`); // Log timer countdown
         if (respawnTimer <= 0 && lives > 0 && currentGameState !== GameState.GAME_OVER) {
+            console.log("Respawn timer finished, attempting respawn..."); // Log respawn attempt
             respawnPlayer();
         }
         // Don't update game elements while waiting for respawn? Or allow asteroids to move? Let's allow movement.
@@ -335,43 +428,50 @@ function renderGame() {
             ctx.font = '48px Arial';
             ctx.fillText("ASTEROIDS", canvas.width / 2, canvas.height / 3);
 
-            // Draw Menu Options
+            // Draw Menu Options using dynamic currentMenuOptions
             ctx.font = '24px Arial';
-            const menuStartY = canvas.height / 2 - (menuOptions.length / 2 * 40); // Center vertically
+            const menuStartY = canvas.height / 2 - (currentMenuOptions.length / 2 * 40);
             const menuLineHeight = 40;
-            menuOptions.forEach((option, index) => {
+            currentMenuOptions.forEach((option, index) => {
                 const isSelected = index === menuSelectionIndex;
                 ctx.fillStyle = isSelected ? 'yellow' : 'white';
                 let text = '';
                 if (typeof option === 'string') {
-                    text = option; // "Start"
+                    text = option; // "Start", "Resume", "High Scores", "Achievements"
                 } else { // Difficulty object
                     text = option.name;
                     if (option === selectedDifficulty) {
-                        text += " (Selected)"; // Indicate current selection
-                        if (!isSelected) ctx.fillStyle = 'cyan'; // Show selected difficulty even if not hovered
+                        text += " (Selected)";
+                        if (!isSelected) ctx.fillStyle = 'cyan';
                     }
-                }
-                if (option === 'High Scores') {
-                    text = option;
-                }
-                if (option === 'Achievements') {
-                    text = option;
                 }
                 ctx.fillText(text, canvas.width / 2, menuStartY + index * menuLineHeight);
             });
             break;
 
         case GameState.PLAYING:
-        case GameState.PAUSED: // Render game elements even when paused
+            // Draw game elements
             if (ship && ship.isAlive && respawnTimer <= 0) ship.draw(ctx);
             asteroids.forEach(asteroid => asteroid.draw(ctx));
             bullets.forEach(bullet => bullet.draw(ctx));
             ufos.forEach(ufo => ufo.draw(ctx));
+            // Render notifications over playing state
+            drawAchievementNotifications();
+            break;
 
-            if (currentGameState === GameState.PAUSED) {
-                drawCenterText("PAUSED", "Press 'P' to Resume");
-            }
+        case GameState.PAUSED:
+            // Render game elements slightly dimmed / underneath
+            ctx.globalAlpha = 0.5; // Dim the background game
+            if (ship && ship.isAlive && respawnTimer <= 0) ship.draw(ctx);
+            asteroids.forEach(asteroid => asteroid.draw(ctx));
+            bullets.forEach(bullet => bullet.draw(ctx));
+            ufos.forEach(ufo => ufo.draw(ctx));
+            ctx.globalAlpha = 1.0; // Reset alpha
+
+            // Draw Pause Menu on top
+            drawPauseMenu();
+            // Render notifications over pause state
+            drawAchievementNotifications();
             break;
 
         case GameState.HIGH_SCORES:
@@ -534,39 +634,38 @@ function checkCollisions() {
 }
 
 function handlePlayerDeath(forced = false) {
-    // Added forced parameter
-    // Ship might already be destroyed (e.g. by hyperspace fail)
-    // Use destroy() return value *or* forced flag
     let destroyed = forced;
     if (ship && !forced) {
-        destroyed = ship.destroy(audioManager, forced); // Normal destruction check (respects invulnerability)
+        destroyed = ship.destroy(audioManager, forced);
     }
 
     if (destroyed) {
-        audioManager.stopThrustSound(); // Stop sound on death
+        console.log(`Player death handled. Lives left: ${lives - 1}`); // Log death event
+        audioManager.stopThrustSound();
         lives--;
         updateUI();
         if (lives <= 0) {
             gameOver();
         } else {
+            console.log(`Starting respawn timer (${RESPAWN_DELAY}s)`); // Log timer start
             respawnTimer = RESPAWN_DELAY;
-            ship = null;
+            ship = null; // Explicitly nullify ship
         }
     }
 }
 
 function respawnPlayer(isInitialSpawn = false) {
-    // Only respawn if game not over and ship doesn't exist or isn't alive
+    // Add log to see if this function is even called
+    console.log(`respawnPlayer called. isInitialSpawn=${isInitialSpawn}, currentGameState=${currentGameState}, shipExists=${!!ship}, shipAlive=${ship?.isAlive}`);
     if (currentGameState !== GameState.GAME_OVER && (!ship || !ship.isAlive)) {
-         console.log("Respawning Player");
+         console.log("Respawning Player - Conditions Met");
          const centerX = canvas.width / 2;
          const centerY = canvas.height / 2;
          ship = new PlayerShip(centerX, centerY);
-         // Invulnerability is handled by the PlayerShip constructor
-         respawnTimer = 0; // Clear timer
-
-         // Optional: Clear area around spawn point? The invulnerability should handle most cases.
-         // clearSpawnArea(centerX, centerY);
+         respawnTimer = 0;
+         audioManager.stopThrustSound(); // Stop just in case
+    } else {
+        console.log("Respawning Player - Conditions NOT Met");
     }
 }
 
@@ -581,15 +680,14 @@ function levelUp() {
 
 function gameOver() {
     console.log("Game Over!");
-    finalScore = score; // Store score for display
+    finalScore = score;
     currentGameState = GameState.GAME_OVER;
+    pausedGameExists = false; // Game ended, no paused game
     if(ship) {
-        ship.isThrusting = false; // Stop potential thrust sound
+        ship.isThrusting = false;
     }
     audioManager.stopThrustSound();
     audioManager.stopUfoHum();
-
-    // Check and potentially add score to high scores
     checkAndAddHighScore(finalScore);
 }
 
@@ -765,6 +863,34 @@ function updateScore(amount) {
     updateUI(); // Update score display immediately
     // Check score-based achievements (might be slightly delayed if done here vs updateGame)
     achievementManager.checkUnlockConditions({ score: score, level: level });
+}
+
+// Function to draw the Pause Menu
+function drawPauseMenu() {
+    // Semi-transparent overlay
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillRect(canvas.width * 0.25, canvas.height * 0.25, canvas.width * 0.5, canvas.height * 0.5);
+
+    // Menu Title
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.font = '36px Arial';
+    const titleY = canvas.height * 0.35;
+    ctx.fillText("PAUSED", canvas.width / 2, titleY);
+
+    // Menu Options
+    ctx.font = '24px Arial';
+    const pauseStartY = titleY + 60;
+    const pauseLineHeight = 40;
+    pauseMenuOptions.forEach((option, index) => {
+        ctx.fillStyle = index === pauseMenuSelectionIndex ? 'yellow' : 'white';
+        ctx.fillText(option, canvas.width / 2, pauseStartY + index * pauseLineHeight);
+    });
+
+    // Hint for resuming
+    ctx.font = '16px Arial';
+    ctx.fillStyle = 'lightgray';
+    ctx.fillText("(Press P or Esc to Resume)", canvas.width / 2, canvas.height * 0.75 - 20);
 }
 
 // --- TODO ---

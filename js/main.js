@@ -267,7 +267,7 @@ function handleInput(deltaTime) {
                 if (menuSelectionIndex === 0) { // Start or Resume
                     if (pausedGameExists) {
                         console.log("Resuming paused game...");
-                        currentGameState = GameState.PAUSED;
+                        currentGameState = GameState.PLAYING;
                     } else {
                         console.log("Executing startGame() from menu...");
                         startGame();
@@ -287,7 +287,7 @@ function handleInput(deltaTime) {
                         case 'Help':
                             currentGameState = GameState.HELP;
                             break;
-                        case 'Reset User Data':
+                        case 'Reset Data':
                             if (currentUser && confirm(`Are you sure you want to reset all data for user '${currentUser}'?`)) {
                                 console.log(`Resetting data for user: ${currentUser}`);
                                 persistenceManager.resetUserData(currentUser);

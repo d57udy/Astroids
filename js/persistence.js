@@ -5,7 +5,7 @@ const USER_LIST_KEY = 'asteroids_userList'; // Key for storing known usernames
 
 export class PersistenceManager {
     constructor() {
-        this.currentUser = null;
+        this.currentUser = undefined;
         if (!this.isLocalStorageAvailable()) {
             console.warn("localStorage is not available. High scores and achievements will not be saved.");
         }

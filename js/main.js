@@ -94,6 +94,9 @@ const pauseMenuOptions = ['Resume', 'Restart', 'Main Menu']; // Pause menu items
 let pausedGameExists = false; // Flag to track paused game
 let currentUser = null; // Track current user
 let promptInput = ""; // For user name entry
+let usernameInputContainer = null; // HTML container for username input
+let usernameInputField = null; // HTML input field
+let usernameSubmitBtn = null; // HTML submit button
 
 // --- Initialization ---
 
@@ -103,6 +106,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!canvas) { console.error("Canvas element not found!"); return; }
     ctx = canvas.getContext('2d');
     if (!ctx) { console.error("2D Context not available!"); return; }
+
+    // Get username input elements
+    usernameInputContainer = document.getElementById('username-input-container');
+    usernameInputField = document.getElementById('username-input');
+    usernameSubmitBtn = document.getElementById('username-submit-btn');
+
+    // Setup username input handlers
+    if (usernameInputField && usernameSubmitBtn) {
+        usernameSubmitBtn.addEventListener('click', handleUsernameSubmit);
+        usernameInputField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleUsernameSubmit();
+            }
+        });
+    }
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -119,9 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Found existing user: ${currentUser}`);
         loadUserData(currentUser); // Loads user's scores into highScores
         currentGameState = GameState.MENU;
+        hideUsernameInput();
     } else {
         console.log("No existing user found, proceeding to prompt.");
         currentGameState = GameState.PROMPT_USER;
+        showUsernameInput();
     }
     console.log(`[DOM] Initial GameState set to: ${currentGameState}`); // Log the determined state
 
@@ -139,6 +160,46 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Core Game Functions ---
+
+// Function to handle username submission
+function handleUsernameSubmit() {
+    if (!usernameInputField) return;
+
+    const username = usernameInputField.value.trim();
+    if (username.length >= 3) {
+        console.log(`User entered: ${username}`);
+        loadUserData(username);
+        currentGameState = GameState.MENU;
+        usernameInputField.value = ''; // Clear input
+        hideUsernameInput();
+    } else {
+        // Show error or shake animation
+        usernameInputField.style.borderColor = 'red';
+        setTimeout(() => {
+            if (usernameInputField) usernameInputField.style.borderColor = '#666';
+        }, 500);
+    }
+}
+
+// Function to show username input
+function showUsernameInput() {
+    if (usernameInputContainer) {
+        usernameInputContainer.style.display = 'block';
+        // Auto-focus on mobile to bring up keyboard
+        if (usernameInputField) {
+            setTimeout(() => {
+                usernameInputField.focus();
+            }, 100);
+        }
+    }
+}
+
+// Function to hide username input
+function hideUsernameInput() {
+    if (usernameInputContainer) {
+        usernameInputContainer.style.display = 'none';
+    }
+}
 
 // Function to load data for a specific user
 function loadUserData(username) {
@@ -234,7 +295,8 @@ function handleInput(deltaTime) {
     audioManager.resumeContext();
 
     if (currentGameState === GameState.PROMPT_USER) {
-         handlePromptInput();
+         // Username input now handled via HTML input field
+         // No keyboard handling needed here
          return;
     }
 
@@ -301,6 +363,7 @@ function handleInput(deltaTime) {
                             promptInput = "";
                             currentUser = null;
                             persistenceManager.setCurrentUser(null);
+                            showUsernameInput();
                             break;
                     }
                 } else if (typeof selectedOption === 'object' && selectedOption.id) { // Difficulty object
@@ -493,8 +556,12 @@ function renderGame() {
     // console.log(`[renderGame] Current state: ${currentGameState}`); // Optional: Log state every frame
     switch (currentGameState) {
         case GameState.PROMPT_USER:
-            console.log("[renderGame] Calling drawUserPrompt"); // Log drawing call
-            drawUserPrompt();
+            // Username input is now handled via HTML input field
+            // Just draw a simple background or nothing
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.font = '24px Arial';
+            ctx.fillText("ASTEROIDS", canvas.width / 2, canvas.height / 4);
             break;
         case GameState.MENU:
             console.log("[renderGame] Rendering MENU state"); // Log drawing call

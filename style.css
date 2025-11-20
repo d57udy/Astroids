@@ -117,4 +117,68 @@ canvas {
     }
 }
 
-/* Add more styles later for menus, buttons, etc. */ 
+/* --- Username Input Container --- */
+.username-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    border: 2px solid #444;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    z-index: 100;
+    min-width: 300px;
+    max-width: 90%;
+}
+
+.username-container h2 {
+    color: white;
+    margin: 0 0 20px 0;
+    font-size: 24px;
+}
+
+.username-container input {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    border: 2px solid #666;
+    border-radius: 5px;
+    background-color: #222;
+    color: white;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+.username-container input:focus {
+    outline: none;
+    border-color: yellow;
+}
+
+.username-container button {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    border: 2px solid #666;
+    border-radius: 5px;
+    background-color: #333;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.username-container button:hover {
+    background-color: #555;
+    border-color: yellow;
+}
+
+.username-container button:active {
+    background-color: yellow;
+    color: black;
+}
+
+/* Add more styles later for menus, buttons, etc. */
